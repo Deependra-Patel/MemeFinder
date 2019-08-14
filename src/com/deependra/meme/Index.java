@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,34 +30,35 @@ import com.deependra.meme.Data.Meme;
 import com.deependra.meme.Data.MemeData;
 import com.google.gson.Gson;
 
-public class Main {
-
+public class Index {
     private static final Gson GSON = new Gson();
+    private final MemeData memesData;
+    private final Directory index;
+    private final StandardAnalyzer analyzer;
 
-    public static void main(String[] args) throws IOException {
+    public Index() throws IOException {
         // 0. Specify the analyzer for tokenizing text.
         //    The same analyzer should be used for indexing and searching
-        StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
+        analyzer = new StandardAnalyzer(Version.LUCENE_40);
 
         // 1. create the index
-        Directory index = new RAMDirectory();
+        index = new RAMDirectory();
 
         IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_40, analyzer);
 
         IndexWriter w = new IndexWriter(index, config);
 
         BufferedReader bufferedReader = new BufferedReader(new FileReader("./resources/db.json"));
-        MemeData memesData = GSON.fromJson(bufferedReader, MemeData.class);
+        memesData = GSON.fromJson(bufferedReader, MemeData.class);
         createIndex(w, memesData);
+    }
 
-        // 2. query
-        String querystr = args.length > 0 ? args[0] : "chair";
-
+    public String searchIndex(String input) throws IOException {
         // the "title" arg specifies the default field to use
         // when no field is explicitly specified in the query.
         Query q = null;
         try {
-            q = new QueryParser(Version.LUCENE_40, "title", analyzer).parse(querystr);
+            q = new QueryParser(Version.LUCENE_40, "title", analyzer).parse(input);
         } catch (org.apache.lucene.queryparser.classic.ParseException e) {
             e.printStackTrace();
         }
@@ -74,10 +78,7 @@ public class Main {
             Document d = searcher.doc(docId);
             System.out.println((i + 1) + ". " + memesData.get_default().get(Long.valueOf(d.get("index"))));
         }
-
-        // reader can only be closed when there
-        // is no need to access the documents any more.
-        reader.close();
+        return Stream.of(hits).map(Objects::toString).collect(Collectors.joining(","));
     }
 
     private static void createIndex(IndexWriter w, MemeData memeData) throws IOException {
