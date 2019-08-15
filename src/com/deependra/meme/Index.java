@@ -3,6 +3,8 @@ package com.deependra.meme;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -53,7 +55,7 @@ public class Index {
         createIndex(w, memesData);
     }
 
-    public String searchIndex(String input) throws IOException {
+    public List<String> searchIndex(String input) throws IOException {
         // the "title" arg specifies the default field to use
         // when no field is explicitly specified in the query.
         Query q = null;
@@ -73,12 +75,16 @@ public class Index {
 
         // 4. display results
         System.out.println("Found " + hits.length + " hits.");
+        List<String> images = new ArrayList<>();
         for (int i = 0; i < hits.length; ++i) {
             int docId = hits[i].doc;
             Document d = searcher.doc(docId);
-            System.out.println((i + 1) + ". " + memesData.get_default().get(Long.valueOf(d.get("index"))));
+            Meme meme = memesData.get_default().get(Long.valueOf(d.get("index")));
+            String extension = meme.getMedia().substring(meme.getMedia().lastIndexOf("."));
+            images.add(meme.getId() + extension);
+            System.out.println((i + 1) + ". " + meme);
         }
-        return Stream.of(hits).map(Objects::toString).collect(Collectors.joining(","));
+        return images;
     }
 
     private static void createIndex(IndexWriter w, MemeData memeData) throws IOException {
