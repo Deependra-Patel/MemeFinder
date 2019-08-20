@@ -4,11 +4,9 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -55,7 +53,7 @@ public class Index {
         createIndex(w, memesData);
     }
 
-    public List<String> searchIndex(String input) throws IOException {
+    public String searchIndex(String input) throws IOException {
         // the "title" arg specifies the default field to use
         // when no field is explicitly specified in the query.
         Query q = null;
@@ -74,6 +72,7 @@ public class Index {
         ScoreDoc[] hits = collector.topDocs().scoreDocs;
 
         // 4. display results
+        System.out.println("Queried " + input);
         System.out.println("Found " + hits.length + " hits.");
         List<String> images = new ArrayList<>();
         for (int i = 0; i < hits.length; ++i) {
@@ -84,7 +83,9 @@ public class Index {
             images.add(meme.getId() + extension);
             System.out.println((i + 1) + ". " + meme);
         }
-        return images;
+        Map<String, List<String>> stringListMap = new HashMap<>();
+        stringListMap.put("results", images);
+        return GSON.toJson(stringListMap);
     }
 
     private static void createIndex(IndexWriter w, MemeData memeData) throws IOException {
